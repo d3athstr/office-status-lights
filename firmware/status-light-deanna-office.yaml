@@ -1,0 +1,7 @@
+substitutions:
+  name: status-light-deanna-office
+  friendly_name: "DeAnna Office Status Light"
+  data_pin: GPIO1   # XIAO ESP32-C6 pin D1
+
+packages:
+  common: !include status-light-common.yaml

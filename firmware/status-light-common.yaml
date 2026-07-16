@@ -1,0 +1,111 @@
+# Shared package for the office status lights.
+# Per-device files set: name, friendly_name, data_pin.
+#
+# ISA-101: firmware exposes the ring + four 6-LED segments; all state/color
+# logic lives in HA automations. Default power-on state is OFF (dark = OK).
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+
+esp32:
+  board: seeed_xiao_esp32c6
+  variant: esp32c6
+  framework:
+    type: esp-idf
+
+logger:
+
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "${name} Fallback"
+    password: !secret fallback_ap_password
+
+captive_portal:
+
+light:
+  # Full ring — for effects/tests; normally driven via the partitions below.
+  - platform: esp32_rmt_led_strip
+    id: ring
+    name: "Ring"
+    pin: ${data_pin}
+    num_leds: 24
+    chipset: ws2812
+    rgb_order: GRB
+    rmt_symbols: 48
+    default_transition_length: 250ms
+    restore_mode: ALWAYS_OFF
+
+  # Quadrants, clockwise from LED 0. HA automations target these.
+  - platform: partition
+    name: "Segment WAN"
+    id: seg_wan
+    restore_mode: ALWAYS_OFF
+    segments:
+      - id: ring
+        from: 0
+        to: 5
+  - platform: partition
+    name: "Segment VPN"
+    id: seg_vpn
+    restore_mode: ALWAYS_OFF
+    segments:
+      - id: ring
+        from: 6
+        to: 11
+  - platform: partition
+    name: "Segment Backup"
+    id: seg_backup
+    restore_mode: ALWAYS_OFF
+    segments:
+      - id: ring
+        from: 12
+        to: 17
+  - platform: partition
+    name: "Segment Alert"
+    id: seg_alert
+    restore_mode: ALWAYS_OFF
+    segments:
+      - id: ring
+        from: 18
+        to: 23
+
+# Ring is powered through the XIAO's 5V pin (USB VBUS) — keep total draw well
+# under the USB budget. 24 LEDs full white ≈ 1.4 A; cap at ~35% max brightness
+# unless the ring gets its own 5V feed (see docs/wiring.md).
+number:
+  - platform: template
+    name: "Max Brightness Limit"
+    id: max_brightness
+    min_value: 5
+    max_value: 100
+    step: 5
+    initial_value: 35
+    restore_value: true
+    unit_of_measurement: "%"
+    optimistic: true
+    entity_category: config
+
+sensor:
+  - platform: wifi_signal
+    name: "WiFi Signal"
+    update_interval: 60s
+    entity_category: diagnostic
+  - platform: uptime
+    name: "Uptime"
+    entity_category: diagnostic
+
+button:
+  - platform: restart
+    name: "Restart"
+    entity_category: diagnostic
