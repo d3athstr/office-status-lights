@@ -1,8 +1,18 @@
-# Shared package for the office status lights.
-# Per-device files set: name, friendly_name, data_pin.
+# Shared package for the office status lights — ZIGBEE end device, battery powered.
+# Per-device files set: name, friendly_name, data_pin, gate_pin.
 #
-# ISA-101: firmware exposes the ring + four 6-LED segments; all state/color
-# logic lives in HA automations. Default power-on state is OFF (dark = OK).
+# Radio: Zigbee 3.0 via the experimental luar123/zigbee_esphome component
+# (same as the pool level monitor plan). Pairs with ZHA. No wifi/api/ota —
+# reflash over USB-C only.
+#
+# Power: 1S LiPo on the XIAO BAT pads. The ring's VCC comes from BAT+ (the
+# XIAO 5V pin is dead on battery) and its GND return is switched by an AO3400
+# low-side FET (gate = gate_pin, 100k pulldown) so a dark ring draws zero —
+# WS2812Bs idle at ~1 mA/LED even when off, which would otherwise dominate
+# the battery budget. ISA-101: dark = OK = gated off.
+#
+# HA exposes four fixed-hue dimmable lights (one per quadrant); automations
+# just turn them on/off. Hues are set here, not in HA.
 
 esphome:
   name: ${name}
@@ -14,30 +24,146 @@ esp32:
   framework:
     type: esp-idf
 
+external_components:
+  - source: github://luar123/zigbee_esphome@c18c9a28f8b116db0c8a7d3dc9be114b03f0f3cd
+    components: [zigbee]
+
 logger:
+  level: INFO
 
-api:
-  encryption:
-    key: !secret api_key
+zigbee:
+  id: zb
+  endpoints:
+    - num: 1                       # WAN / internet — red
+      device_type: DIMMABLE_LIGHT
+      clusters:
+        - id: ON_OFF
+          attributes:
+            - attribute_id: 0
+              type: bool
+              on_value:
+                then:
+                  - light.control:
+                      id: seg_wan
+                      state: !lambda "return (bool)x;"
+                      red: 100%
+                      green: 0%
+                      blue: 0%
+                  - script.execute: update_gate
+        - id: LEVEL
+          attributes:
+            - attribute_id: 0
+              type: UINT8
+              value: 255
+              on_value:
+                then:
+                  - light.control:
+                      id: seg_wan
+                      brightness: !lambda "return ((float)x)/255;"
+    - num: 2                       # VPN — amber
+      device_type: DIMMABLE_LIGHT
+      clusters:
+        - id: ON_OFF
+          attributes:
+            - attribute_id: 0
+              type: bool
+              on_value:
+                then:
+                  - light.control:
+                      id: seg_vpn
+                      state: !lambda "return (bool)x;"
+                      red: 100%
+                      green: 55%
+                      blue: 0%
+                  - script.execute: update_gate
+        - id: LEVEL
+          attributes:
+            - attribute_id: 0
+              type: UINT8
+              value: 255
+              on_value:
+                then:
+                  - light.control:
+                      id: seg_vpn
+                      brightness: !lambda "return ((float)x)/255;"
+    - num: 3                       # Backup freshness — amber
+      device_type: DIMMABLE_LIGHT
+      clusters:
+        - id: ON_OFF
+          attributes:
+            - attribute_id: 0
+              type: bool
+              on_value:
+                then:
+                  - light.control:
+                      id: seg_backup
+                      state: !lambda "return (bool)x;"
+                      red: 100%
+                      green: 55%
+                      blue: 0%
+                  - script.execute: update_gate
+        - id: LEVEL
+          attributes:
+            - attribute_id: 0
+              type: UINT8
+              value: 255
+              on_value:
+                then:
+                  - light.control:
+                      id: seg_backup
+                      brightness: !lambda "return ((float)x)/255;"
+    - num: 4                       # Unacked alerts — magenta
+      device_type: DIMMABLE_LIGHT
+      clusters:
+        - id: ON_OFF
+          attributes:
+            - attribute_id: 0
+              type: bool
+              on_value:
+                then:
+                  - light.control:
+                      id: seg_alert
+                      state: !lambda "return (bool)x;"
+                      red: 100%
+                      green: 0%
+                      blue: 100%
+                  - script.execute: update_gate
+        - id: LEVEL
+          attributes:
+            - attribute_id: 0
+              type: UINT8
+              value: 255
+              on_value:
+                then:
+                  - light.control:
+                      id: seg_alert
+                      brightness: !lambda "return ((float)x)/255;"
+  on_join:
+    then:
+      - logger.log: "Joined Zigbee network"
 
-ota:
-  - platform: esphome
-    password: !secret ota_password
+# Ring GND return through the AO3400 — off = ring physically dark, 0 mA.
+switch:
+  - platform: gpio
+    id: ring_gate
+    pin: ${gate_pin}
+    restore_mode: ALWAYS_OFF
+    internal: true
 
-wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
-  ap:
-    ssid: "${name} Fallback"
-    password: !secret ap_password
-
-captive_portal:
+script:
+  - id: update_gate
+    then:
+      - lambda: |-
+          bool any = id(seg_wan).remote_values.is_on()
+                  || id(seg_vpn).remote_values.is_on()
+                  || id(seg_backup).remote_values.is_on()
+                  || id(seg_alert).remote_values.is_on();
+          if (any) id(ring_gate).turn_on(); else id(ring_gate).turn_off();
 
 light:
-  # Full ring — for effects/tests; normally driven via the partitions below.
   - platform: esp32_rmt_led_strip
     id: ring
-    name: "Ring"
+    internal: true
     pin: ${data_pin}
     num_leds: 24
     chipset: ws2812
@@ -46,66 +172,51 @@ light:
     default_transition_length: 250ms
     restore_mode: ALWAYS_OFF
 
-  # Quadrants, clockwise from LED 0. HA automations target these.
+  # Quadrants, clockwise from LED 0. Driven only by the zigbee handlers above.
   - platform: partition
-    name: "Segment WAN"
     id: seg_wan
+    internal: true
     restore_mode: ALWAYS_OFF
-    segments:
-      - id: ring
-        from: 0
-        to: 5
+    segments: [{id: ring, from: 0, to: 5}]
   - platform: partition
-    name: "Segment VPN"
     id: seg_vpn
+    internal: true
     restore_mode: ALWAYS_OFF
-    segments:
-      - id: ring
-        from: 6
-        to: 11
+    segments: [{id: ring, from: 6, to: 11}]
   - platform: partition
-    name: "Segment Backup"
     id: seg_backup
+    internal: true
     restore_mode: ALWAYS_OFF
-    segments:
-      - id: ring
-        from: 12
-        to: 17
+    segments: [{id: ring, from: 12, to: 17}]
   - platform: partition
-    name: "Segment Alert"
     id: seg_alert
+    internal: true
     restore_mode: ALWAYS_OFF
-    segments:
-      - id: ring
-        from: 18
-        to: 23
+    segments: [{id: ring, from: 18, to: 23}]
 
-# Ring is powered through the XIAO's 5V pin (USB VBUS) — keep total draw well
-# under the USB budget. 24 LEDs full white ≈ 1.4 A; cap at ~35% max brightness
-# unless the ring gets its own 5V feed (see docs/wiring.md).
-number:
-  - platform: template
-    name: "Max Brightness Limit"
-    id: max_brightness
-    min_value: 5
-    max_value: 100
-    step: 5
-    initial_value: 35
-    restore_value: true
-    unit_of_measurement: "%"
-    optimistic: true
-    entity_category: config
+# XIAO BOOT button (GPIO9): hold 5-20 s to factory-reset the Zigbee join.
+binary_sensor:
+  - platform: gpio
+    id: boot_button
+    internal: true
+    pin:
+      number: GPIO9
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    on_click:
+      min_length: 5s
+      max_length: 20s
+      then:
+        - zigbee.reset: zb
 
-sensor:
-  - platform: wifi_signal
-    name: "WiFi Signal"
-    update_interval: 60s
-    entity_category: diagnostic
-  - platform: uptime
-    name: "Uptime"
-    entity_category: diagnostic
-
-button:
-  - platform: restart
-    name: "Restart"
-    entity_category: diagnostic
+# TODO: battery voltage — XIAO C6 has no built-in VBAT divider; needs an
+# external 200k/100k divider from BAT+ to A0 (GPIO0) before enabling this.
+# sensor:
+#   - platform: adc
+#     id: battery_voltage
+#     pin: GPIO0
+#     attenuation: 12db
+#     update_interval: 60s
+#     filters: [multiply: 3.0]

@@ -1,7 +1,8 @@
 substitutions:
   name: status-light-deanna-office
   friendly_name: "DeAnna Office Status Light"
-  data_pin: GPIO1   # XIAO ESP32-C6 pin D1
+  data_pin: GPIO1   # XIAO ESP32-C6 pin D1 -> 330R -> ring DIN
+  gate_pin: GPIO2   # XIAO ESP32-C6 pin D2 -> AO3400 gate (100k pulldown)
 
 packages:
   common: !include status-light-common.yaml

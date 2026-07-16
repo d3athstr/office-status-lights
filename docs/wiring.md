@@ -1,7 +1,8 @@
-# Wiring — Office Status Light
+# Wiring — Office Status Light (Zigbee, battery)
 
-One unit = XIAO ESP32-C6 + 24-LED WS2812B ring + two passives, powered by a
-single 5 V USB-C wall wart into the XIAO.
+One unit = XIAO ESP32-C6 + 24-LED WS2812B ring + AO3400 low-side FET + three
+passives, powered by a 1S LiPo (8000 mAh) on the XIAO's BAT pads. The radio
+is Zigbee 3.0 (ZHA); there is no WiFi and no OTA — reflash over USB-C.
 
 ![Wiring diagram](wiring-diagram.svg)
 
@@ -9,45 +10,59 @@ single 5 V USB-C wall wart into the XIAO.
 
 | From | To | Notes |
 |---|---|---|
-| USB-C wall wart (5 V ≥2 A) | XIAO USB-C port | Single supply for everything |
-| XIAO `5V` pin | Ring `5V` / `VCC` | VBUS passthrough; see power budget below |
-| XIAO `GND` pin | Ring `GND` | Common ground — required for the data line to work |
-| XIAO `D1` (GPIO1) | 330 Ω resistor → Ring `DIN` | Resistor as close to the ring's DIN pad as possible |
-| Ring `5V` ↔ Ring `GND` | 1000 µF 6.3 V electrolytic | Across the rail **at the ring**; stripe/short leg (−) to GND |
+| LiPo + | XIAO `BAT+` pad (underside) | 1S 3.7 V **protected** cell; no reverse-polarity protection on the pads |
+| LiPo − | XIAO `BAT−` pad (underside) | |
+| `BAT+` junction | Ring `VCC` | The XIAO **5V pin is dead on battery** — ring VCC must come from BAT+ |
+| XIAO `D1` (GPIO1) | 330 Ω → Ring `DIN` | Resistor at the ring's DIN pad; keep lead < 10 cm |
+| Ring `GND` | AO3400 **drain** | Ring's ground return is switched, not tied to GND |
+| AO3400 **source** | GND | |
+| AO3400 **gate** | XIAO `D2` (GPIO2) | 100 kΩ from gate to GND so the ring stays off during boot/flash |
+| Ring `VCC` ↔ Ring `GND` | 1000 µF 6.3 V electrolytic | At the ring; stripe/short leg (−) to the ring-GND side |
 
-The ring's `DOUT` pad is unused (single ring, no chaining).
+`DOUT` unused. USB-C is for charging and flashing only.
 
-## Power budget
+## Why the FET
 
-24 × WS2812B at full white ≈ **1.4 A** — more than the XIAO's 5 V pin should
-pass continuously. Two acceptable configurations:
+WS2812Bs draw ~1 mA per LED even when displaying black — ~20 mA continuous
+for a 24-LED ring, which would dominate the battery budget. The AO3400 opens
+the ring's ground return whenever all four segments are off, so the ISA-101
+all-OK state (dark ring) costs 0 mA. Firmware drives the gate automatically
+(`update_gate` script).
 
-1. **As drawn (default):** ring fed from the XIAO 5 V pin, with the firmware's
-   `Max Brightness Limit` at ≤35 % (~0.5 A worst case). Fine for a status
-   light — ISA-101 says it's dim or dark almost all the time anyway.
-2. **Full brightness needed:** split a USB cable / use a screw-terminal USB
-   breakout and feed the ring's 5 V/GND directly from the supply, with the
-   XIAO's 5 V pin tied to the same rail (it accepts 5 V input there). Grounds
-   common, data unchanged.
+Low-side switching means the ring's DIN could phantom-power the string
+through its input-protection diode if the data line idled high — it doesn't:
+WS2812 data idles low, and the firmware only writes frames when a segment
+changes.
 
-## 3.3 V logic vs 5 V ring
+## Power budget (v1 firmware, honest numbers)
 
-The C6 drives DIN at 3.3 V while the ring runs at 5 V — marginal per the
-WS2812B datasheet (VIH = 0.7 × VDD = 3.5 V) but reliable in practice with
-short leads and the 330 Ω resistor. If you see flicker or glitching:
+- C6 as an always-on Zigbee end device (radio RX on): **~25 mA baseline**
+- 8000 mAh cell → **roughly 10–14 days per charge** with the ring mostly dark
+- Exception displayed: add ~20 mA ring idle + ~10–40 mA for six dim LEDs
+- **v2 plan:** sleepy end device with short poll interval — cuts baseline to
+  well under 1 mA, but needs bench validation that queued ZHA commands
+  survive the poll window. Tracked in the README.
 
-- **Option A (preferred):** 74AHCT125 buffer between GPIO1 and DIN (powered
-  from 5 V, shifts 3.3 V → 5 V cleanly), or
-- **Option B (zero extra parts class):** drop the ring's supply through a
-  1N4007 diode (~4.3 V at the ring) so 3.3 V clears the VIH threshold. Only
-  valid in configuration 2 — don't diode-drop the XIAO's rail.
+Charging reality: the XIAO's onboard charger is ~100 mA — a full 8 Ah
+recharge takes 3+ days of USB time. Top off overnight regularly, charge the
+cell externally, or add a TP4056-class 1 A charger board.
+
+## Voltage notes
+
+- WS2812B on 3.7–4.2 V: in spec, slightly dimmer than at 5 V, colors fine.
+- Logic margin *improves* on battery: VIH = 0.7 × VDD ≈ 2.6–2.9 V, which the
+  C6's 3.3 V data line clears comfortably — the 5 V level-shift concern from
+  the wall-powered design is gone.
 
 ## Assembly notes
 
-- Keep the GPIO1→DIN lead short (<10 cm); it's the only signal that cares.
-- Solder the cap and resistor to the ring's pads, not mid-cable — the ring
-  then presents a clean 3-wire pigtail (5V/GND/DIN) to the XIAO.
-- The XIAO and pigtail tuck behind the ring inside the 3D-printed
-  diffuser/stand (design TBD); USB-C port faces the base cutout.
+- Solder the cap and 330 Ω at the ring's pads; FET + 100 k on a small perf
+  square near the ring's GND pad. Everything tucks behind the ring in the
+  3D-printed diffuser/stand (design TBD).
+- Battery monitoring: the XIAO C6 has **no built-in VBAT divider**. To report
+  battery to HA, add a 200k/100k divider from BAT+ to A0 (GPIO0) and enable
+  the commented `sensor:` block in the firmware.
 - First flash over USB (`esphome run firmware/status-light-don-office.yaml`
-  from the RAZORCREST build env), OTA after that.
+  from the RAZORCREST build env, `esphome-status` dir). Pairing: open ZHA
+  "Add device" — the light joins automatically when unjoined. Hold the BOOT
+  button 5–20 s to factory-reset the Zigbee join.
