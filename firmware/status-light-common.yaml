@@ -1,18 +1,24 @@
-# Shared package for the office status lights — ZIGBEE end device, battery powered.
-# Per-device files set: name, friendly_name, data_pin, gate_pin.
+# Shared package for the office status lights — ZIGBEE end device, one
+# color-controllable endpoint for the whole ring. Per-device files set:
+# name, friendly_name, data_pin, gate_pin.
 #
-# Radio: Zigbee 3.0 via the experimental luar123/zigbee_esphome component
-# (same as the pool level monitor plan). Pairs with ZHA. No wifi/api/ota —
-# reflash over USB-C only.
+# Behavior (rev 3): HA drives the whole ring as a single color light —
+# green = all OK, red = problem, scheduled 08:00-15:00 Mon-Fri, dark
+# otherwise (Don's spec 2026-07-16; conscious exception to the ISA-101
+# dark-when-OK rule, bounded by the schedule). Colors/schedule live in HA
+# automations, not here.
 #
-# Power: 1S LiPo on the XIAO BAT pads. The ring's VCC comes from BAT+ (the
-# XIAO 5V pin is dead on battery) and its GND return is switched by an AO3400
-# low-side FET (gate = gate_pin, 100k pulldown) so a dark ring draws zero —
-# WS2812Bs idle at ~1 mA/LED even when off, which would otherwise dominate
-# the battery budget. ISA-101: dark = OK = gated off.
+# Radio: Zigbee 3.0 via luar123/zigbee_esphome (pinned), pairs with ZHA.
+# No wifi/api/ota — reflash over USB-C only.
+# DO NOT attach a serial monitor while testing Zigbee: opening the C6's
+# USB-Serial/JTAG port hard-resets the chip (rst:0x15) and drops it off
+# the network.
 #
-# HA exposes four fixed-hue dimmable lights (one per quadrant); automations
-# just turn them on/off. Hues are set here, not in HA.
+# Power: 1S LiPo on the XIAO BAT pads keeps the MCU+radio alive; the ring
+# only lights while a 5 V/BAT+ source feeds its VCC (see docs/wiring.md
+# for the as-built USB variant vs the battery-native rewire). gate_pin
+# drives an optional AO3400 low-side FET on the ring's GND return so a
+# dark ring draws 0 mA — harmless if the FET isn't fitted.
 
 esphome:
   name: ${name}
@@ -47,11 +53,21 @@ external_components:
 logger:
   level: INFO
 
+globals:
+  - id: color_x
+    type: float
+    restore_value: no
+    initial_value: '0'
+  - id: color_y
+    type: float
+    restore_value: no
+    initial_value: '0'
+
 zigbee:
   id: zb
   endpoints:
-    - num: 1                       # WAN / internet — red
-      device_type: DIMMABLE_LIGHT
+    - num: 1
+      device_type: COLOR_DIMMABLE_LIGHT
       clusters:
         - id: ON_OFF
           attributes:
@@ -60,12 +76,8 @@ zigbee:
               on_value:
                 then:
                   - light.control:
-                      id: seg_wan
+                      id: ring
                       state: !lambda "return (bool)x;"
-                      red: 100%
-                      green: 0%
-                      blue: 0%
-                  - script.execute: update_gate
         - id: LEVEL
           attributes:
             - attribute_id: 0
@@ -74,107 +86,42 @@ zigbee:
               on_value:
                 then:
                   - light.control:
-                      id: seg_wan
+                      id: ring
                       brightness: !lambda "return ((float)x)/255;"
-    - num: 2                       # VPN — amber
-      device_type: DIMMABLE_LIGHT
-      clusters:
-        - id: ON_OFF
+        - id: COLOR_CONTROL
           attributes:
-            - attribute_id: 0
-              type: bool
+            - attribute_id: 3
+              type: UINT16
               on_value:
                 then:
+                  - lambda: id(color_x) = (float)x/65536;
                   - light.control:
-                      id: seg_vpn
-                      state: !lambda "return (bool)x;"
-                      red: 100%
-                      green: 55%
-                      blue: 0%
-                  - script.execute: update_gate
-        - id: LEVEL
-          attributes:
-            - attribute_id: 0
-              type: UINT8
-              value: 255
+                      id: ring
+                      red: !lambda "return zigbee::get_r_from_xy(id(color_x), id(color_y));"
+                      green: !lambda "return zigbee::get_g_from_xy(id(color_x), id(color_y));"
+                      blue: !lambda "return zigbee::get_b_from_xy(id(color_x), id(color_y));"
+            - attribute_id: 4
+              type: UINT16
               on_value:
                 then:
+                  - lambda: id(color_y) = (float)x/65536;
                   - light.control:
-                      id: seg_vpn
-                      brightness: !lambda "return ((float)x)/255;"
-    - num: 3                       # Backup freshness — amber
-      device_type: DIMMABLE_LIGHT
-      clusters:
-        - id: ON_OFF
-          attributes:
-            - attribute_id: 0
-              type: bool
-              on_value:
-                then:
-                  - light.control:
-                      id: seg_backup
-                      state: !lambda "return (bool)x;"
-                      red: 100%
-                      green: 55%
-                      blue: 0%
-                  - script.execute: update_gate
-        - id: LEVEL
-          attributes:
-            - attribute_id: 0
-              type: UINT8
-              value: 255
-              on_value:
-                then:
-                  - light.control:
-                      id: seg_backup
-                      brightness: !lambda "return ((float)x)/255;"
-    - num: 4                       # Unacked alerts — magenta
-      device_type: DIMMABLE_LIGHT
-      clusters:
-        - id: ON_OFF
-          attributes:
-            - attribute_id: 0
-              type: bool
-              on_value:
-                then:
-                  - light.control:
-                      id: seg_alert
-                      state: !lambda "return (bool)x;"
-                      red: 100%
-                      green: 0%
-                      blue: 100%
-                  - script.execute: update_gate
-        - id: LEVEL
-          attributes:
-            - attribute_id: 0
-              type: UINT8
-              value: 255
-              on_value:
-                then:
-                  - light.control:
-                      id: seg_alert
-                      brightness: !lambda "return ((float)x)/255;"
+                      id: ring
+                      red: !lambda "return zigbee::get_r_from_xy(id(color_x), id(color_y));"
+                      green: !lambda "return zigbee::get_g_from_xy(id(color_x), id(color_y));"
+                      blue: !lambda "return zigbee::get_b_from_xy(id(color_x), id(color_y));"
   on_join:
     then:
       - logger.log: "Joined Zigbee network"
 
-# Ring GND return through the AO3400 — off = ring physically dark, 0 mA.
+# Optional AO3400 on the ring GND return — follows the ring's on/off state.
+# No-op if the FET isn't fitted (rev 1 as-built wiring).
 switch:
   - platform: gpio
     id: ring_gate
     pin: ${gate_pin}
     restore_mode: ALWAYS_OFF
     internal: true
-
-script:
-  - id: update_gate
-    then:
-      - lambda: |-
-          bool any = id(seg_wan).remote_values.is_on()
-                  || id(seg_vpn).remote_values.is_on()
-                  || id(seg_backup).remote_values.is_on()
-                  || id(seg_alert).remote_values.is_on();
-          if (any) id(ring_gate).turn_on(); else id(ring_gate).turn_off();
 
 light:
   - platform: esp32_rmt_led_strip
@@ -187,28 +134,10 @@ light:
     rmt_symbols: 48
     default_transition_length: 250ms
     restore_mode: ALWAYS_OFF
-
-  # Quadrants, clockwise from LED 0. Driven only by the zigbee handlers above.
-  - platform: partition
-    id: seg_wan
-    internal: true
-    restore_mode: ALWAYS_OFF
-    segments: [{id: ring, from: 0, to: 5}]
-  - platform: partition
-    id: seg_vpn
-    internal: true
-    restore_mode: ALWAYS_OFF
-    segments: [{id: ring, from: 6, to: 11}]
-  - platform: partition
-    id: seg_backup
-    internal: true
-    restore_mode: ALWAYS_OFF
-    segments: [{id: ring, from: 12, to: 17}]
-  - platform: partition
-    id: seg_alert
-    internal: true
-    restore_mode: ALWAYS_OFF
-    segments: [{id: ring, from: 18, to: 23}]
+    on_turn_on:
+      - switch.turn_on: ring_gate
+    on_turn_off:
+      - switch.turn_off: ring_gate
 
 # XIAO BOOT button (GPIO9): hold 5-20 s to factory-reset the Zigbee join.
 binary_sensor:

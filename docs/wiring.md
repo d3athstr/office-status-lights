@@ -1,8 +1,23 @@
-# Wiring — Office Status Light (Zigbee, battery)
+# Wiring — Office Status Light (Zigbee)
 
-One unit = XIAO ESP32-C6 + 24-LED WS2812B ring + AO3400 low-side FET + three
-passives, powered by a 1S LiPo (8000 mAh) on the XIAO's BAT pads. The radio
-is Zigbee 3.0 (ZHA); there is no WiFi and no OTA — reflash over USB-C.
+One unit = XIAO ESP32-C6 + 24-LED WS2812B ring (+ optional AO3400 low-side
+FET) with a 1S LiPo (8000 mAh) on the XIAO's BAT pads. The radio is Zigbee
+3.0 (ZHA); there is no WiFi and no OTA — reflash over USB-C.
+
+## Two wiring variants
+
+**As-built (unit 1, 2026-07-16):** the rev 1 wiring plus a LiPo — ring VCC
+on the XIAO **5V pin**, ring GND straight to GND (no FET), LiPo on BAT+/−.
+
+- On USB power: fully functional (5V pin is live, ring works).
+- On battery: MCU + Zigbee stay online, **ring is dark** — the 5V pin is
+  USB-VBUS passthrough only; the battery never feeds it. The LiPo is a
+  battery-backed *controller*, not a battery-powered *light*.
+- The firmware's gate pin (D2) is a harmless no-op without the FET.
+
+**Battery-native (diagram below):** ring VCC from **BAT+**, AO3400 + 100 k
+gating the ring's GND return. Ring lights on battery; dark hours cost 0 mA.
+The rest of this document describes this variant.
 
 ![Wiring diagram](wiring-diagram.svg)
 
