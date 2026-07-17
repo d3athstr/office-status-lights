@@ -1,37 +1,46 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 660" font-family="Helvetica, Arial, sans-serif">
-  <rect x="0" y="0" width="920" height="660" fill="#ffffff"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 640" font-family="Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="920" height="640" fill="#ffffff"/>
 
   <!-- title -->
-  <text x="460" y="36" text-anchor="middle" font-size="22" font-weight="bold" fill="#1a1a1a">Office Status Light — wiring (Zigbee, battery)</text>
-  <text x="460" y="58" text-anchor="middle" font-size="13" fill="#666666">XIAO ESP32-C6 · Zigbee 3.0 end device (ZHA) · 1S LiPo 8000 mAh · ring gated by AO3400</text>
+  <text x="460" y="36" text-anchor="middle" font-size="22" font-weight="bold" fill="#1a1a1a">Office Status Light — wiring (as built)</text>
+  <text x="460" y="58" text-anchor="middle" font-size="13" fill="#666666">XIAO ESP32-C6 · Zigbee 3.0 (ZHA) · USB-powered ring · LiPo backs MCU + radio</text>
 
-  <!-- segment map -->
-  <text x="740" y="95" text-anchor="middle" font-size="10" fill="#999999">LEDs 0–5: WAN · 6–11: VPN · 12–17: BACKUP · 18–23: ALERT</text>
+  <!-- behavior -->
+  <text x="650" y="95" text-anchor="middle" font-size="10" fill="#999999">Whole ring = one HA color light · GREEN = OK · RED = alert toggle · lit 08:00–15:00 Mon–Fri</text>
+
+  <!-- ===== USB supply ===== -->
+  <rect x="40" y="140" width="110" height="70" rx="8" fill="#e8e8e8" stroke="#888888" stroke-width="1.5"/>
+  <text x="95" y="170" text-anchor="middle" font-size="12" font-weight="bold" fill="#333333">USB 5 V</text>
+  <text x="95" y="186" text-anchor="middle" font-size="10" fill="#555555">PC or wall wart</text>
+  <line x1="150" y1="175" x2="200" y2="175" stroke="#888888" stroke-width="4"/>
+  <polyline points="200,175 200,230 246,230" fill="none" stroke="#888888" stroke-width="4"/>
+  <text x="196" y="163" text-anchor="middle" font-size="10" fill="#777777">USB-C</text>
 
   <!-- ===== LiPo battery ===== -->
-  <rect x="40" y="245" width="110" height="90" rx="8" fill="#e8e8e8" stroke="#888888" stroke-width="1.5"/>
-  <rect x="150" y="258" width="8" height="14" fill="#888888"/>
-  <text x="95" y="280" text-anchor="middle" font-size="12" font-weight="bold" fill="#333333">1S LiPo 3.7 V</text>
-  <text x="95" y="296" text-anchor="middle" font-size="11" fill="#555555">8000 mAh</text>
-  <text x="95" y="312" text-anchor="middle" font-size="9" fill="#777777">protected cell</text>
-  <text x="168" y="262" font-size="12" font-weight="bold" fill="#d94141">+</text>
-  <text x="168" y="325" font-size="12" font-weight="bold" fill="#3d3d3d">−</text>
+  <rect x="40" y="255" width="110" height="90" rx="8" fill="#e8e8e8" stroke="#888888" stroke-width="1.5"/>
+  <rect x="150" y="268" width="8" height="14" fill="#888888"/>
+  <text x="95" y="290" text-anchor="middle" font-size="12" font-weight="bold" fill="#333333">1S LiPo 3.7 V</text>
+  <text x="95" y="306" text-anchor="middle" font-size="11" fill="#555555">8000 mAh</text>
+  <text x="95" y="322" text-anchor="middle" font-size="9" fill="#777777">protected cell</text>
+  <text x="168" y="272" font-size="12" font-weight="bold" fill="#d94141">+</text>
+  <text x="168" y="335" font-size="12" font-weight="bold" fill="#3d3d3d">−</text>
+  <text x="95" y="368" text-anchor="middle" font-size="9" fill="#999999">keeps MCU + radio alive —</text>
+  <text x="95" y="380" text-anchor="middle" font-size="9" fill="#999999">ring is DARK on battery</text>
 
   <!-- ===== XIAO ESP32-C6 ===== -->
   <rect x="250" y="150" width="170" height="170" rx="12" fill="#2b3440" stroke="#111827" stroke-width="1.5"/>
   <rect x="246" y="215" width="14" height="30" rx="3" fill="#b8bec6" stroke="#6b7280"/>
   <rect x="300" y="160" width="70" height="24" rx="4" fill="#3d4a5c"/>
-  <text x="334" y="215" text-anchor="middle" font-size="14" font-weight="bold" fill="#ffffff">XIAO</text>
-  <text x="334" y="233" text-anchor="middle" font-size="13" fill="#d7dde6">ESP32-C6</text>
-  <text x="240" y="205" text-anchor="end" font-size="10" fill="#777777">USB-C:</text>
-  <text x="240" y="217" text-anchor="end" font-size="10" fill="#777777">charge +</text>
-  <text x="240" y="229" text-anchor="end" font-size="10" fill="#777777">flash only</text>
+  <text x="334" y="225" text-anchor="middle" font-size="14" font-weight="bold" fill="#ffffff">XIAO</text>
+  <text x="334" y="243" text-anchor="middle" font-size="13" fill="#d7dde6">ESP32-C6</text>
 
-  <!-- pins right edge: D1 data, D2 gate -->
-  <rect x="418" y="195" width="12" height="10" fill="#d4af37"/>
-  <rect x="418" y="245" width="12" height="10" fill="#d4af37"/>
-  <text x="412" y="203" text-anchor="end" font-size="11" font-weight="bold" fill="#f0d9a0">D1</text>
-  <text x="412" y="253" text-anchor="end" font-size="11" font-weight="bold" fill="#f0d9a0">D2</text>
+  <!-- pins right edge: 5V, D1, GND -->
+  <rect x="418" y="160" width="12" height="10" fill="#d4af37"/>
+  <rect x="418" y="190" width="12" height="10" fill="#d4af37"/>
+  <rect x="418" y="295" width="12" height="10" fill="#d4af37"/>
+  <text x="412" y="168" text-anchor="end" font-size="11" font-weight="bold" fill="#f0d9a0">5V</text>
+  <text x="412" y="198" text-anchor="end" font-size="11" font-weight="bold" fill="#f0d9a0">D1</text>
+  <text x="412" y="303" text-anchor="end" font-size="11" font-weight="bold" fill="#f0d9a0">GND</text>
 
   <!-- BAT pads bottom edge (underside) -->
   <rect x="274" y="314" width="12" height="10" fill="#d4af37"/>
@@ -39,51 +48,31 @@
   <text x="250" y="342" text-anchor="middle" font-size="10" font-weight="bold" fill="#8a7020">BAT+</text>
   <text x="362" y="342" text-anchor="middle" font-size="10" font-weight="bold" fill="#8a7020">BAT−</text>
 
-  <!-- ===== battery wiring ===== -->
-  <!-- BAT+ : battery + -> junction under XIAO -> BAT+ pad, rail continues right -->
-  <polyline points="158,265 210,265 210,365 280,365 280,324" fill="none" stroke="#d94141" stroke-width="3"/>
-  <circle cx="280" cy="365" r="4" fill="#d94141"/>
-  <polyline points="280,365 580,365 580,225 608,225" fill="none" stroke="#d94141" stroke-width="3"/>
-  <text x="388" y="381" text-anchor="middle" font-size="11" font-weight="bold" fill="#d94141">BAT+ 3.7–4.2 V</text>
-
-  <!-- BAT− : battery − -> GND rail y=430; BAT− pad drops to rail -->
-  <polyline points="158,315 185,315 185,430 760,430" fill="none" stroke="#3d3d3d" stroke-width="3"/>
+  <!-- ===== battery wiring: only to BAT pads ===== -->
+  <polyline points="158,275 210,275 210,365 280,365 280,324" fill="none" stroke="#d94141" stroke-width="3"/>
+  <polyline points="158,325 185,325 185,430 760,430" fill="none" stroke="#3d3d3d" stroke-width="3"/>
   <polyline points="330,324 330,430" fill="none" stroke="#3d3d3d" stroke-width="3"/>
   <circle cx="330" cy="430" r="4" fill="#3d3d3d"/>
   <text x="230" y="446" font-size="11" font-weight="bold" fill="#3d3d3d">GND</text>
 
+  <!-- ===== 5V: XIAO 5V pin -> ring VCC ===== -->
+  <polyline points="430,165 580,165 580,225 608,225" fill="none" stroke="#d94141" stroke-width="3"/>
+  <text x="475" y="155" font-size="11" font-weight="bold" fill="#d94141">5 V (USB VBUS)</text>
+
   <!-- ===== data line: D1 -> 330R -> DIN ===== -->
-  <line x1="430" y1="200" x2="458" y2="200" stroke="#2f6fb8" stroke-width="3"/>
-  <rect x="458" y="191" width="48" height="18" rx="3" fill="#ffffff" stroke="#2f6fb8" stroke-width="2"/>
-  <text x="482" y="204" text-anchor="middle" font-size="11" font-weight="bold" fill="#2f6fb8">330 Ω</text>
-  <polyline points="506,200 560,200 560,190 608,190" fill="none" stroke="#2f6fb8" stroke-width="3"/>
-  <text x="530" y="180" text-anchor="middle" font-size="10" fill="#777777">GPIO1 · close to DIN</text>
+  <line x1="430" y1="195" x2="455" y2="195" stroke="#2f6fb8" stroke-width="3"/>
+  <rect x="455" y="186" width="48" height="18" rx="3" fill="#ffffff" stroke="#2f6fb8" stroke-width="2"/>
+  <text x="479" y="199" text-anchor="middle" font-size="11" font-weight="bold" fill="#2f6fb8">330 Ω</text>
+  <polyline points="503,195 545,195 545,190 608,190" fill="none" stroke="#2f6fb8" stroke-width="3"/>
+  <text x="500" y="218" text-anchor="middle" font-size="10" fill="#777777">GPIO1 · close to DIN</text>
 
-  <!-- ===== gate line: D2 -> FET gate, 100k pulldown ===== -->
-  <polyline points="430,250 445,250 445,352 528,352" fill="none" stroke="#7a4fb8" stroke-width="3"/>
-  <text x="452" y="290" font-size="11" font-weight="bold" fill="#7a4fb8">GPIO2</text>
-  <circle cx="487" cy="352" r="4" fill="#7a4fb8"/>
-  <rect x="478" y="378" width="18" height="36" rx="3" fill="#ffffff" stroke="#7a4fb8" stroke-width="2"/>
-  <line x1="487" y1="352" x2="487" y2="378" stroke="#7a4fb8" stroke-width="2.5"/>
-  <line x1="487" y1="414" x2="487" y2="430" stroke="#3d3d3d" stroke-width="2.5"/>
-  <circle cx="487" cy="430" r="4" fill="#3d3d3d"/>
-  <text x="487" y="400" text-anchor="middle" font-size="9" font-weight="bold" fill="#7a4fb8">100k</text>
+  <!-- ===== GND: XIAO GND pin and ring GND to rail ===== -->
+  <polyline points="430,300 445,300 445,430" fill="none" stroke="#3d3d3d" stroke-width="3"/>
+  <circle cx="445" cy="430" r="4" fill="#3d3d3d"/>
+  <polyline points="608,260 590,260 590,430" fill="none" stroke="#3d3d3d" stroke-width="3"/>
+  <circle cx="590" cy="430" r="4" fill="#3d3d3d"/>
 
-  <!-- ===== AO3400 low-side FET ===== -->
-  <rect x="528" y="330" width="56" height="56" rx="6" fill="#fff7ec" stroke="#b8742a" stroke-width="2"/>
-  <text x="556" y="353" text-anchor="middle" font-size="10" font-weight="bold" fill="#b8742a">AO3400</text>
-  <text x="556" y="366" text-anchor="middle" font-size="9" fill="#b8742a">N-FET</text>
-  <text x="536" y="345" font-size="8" fill="#b8742a">G</text>
-  <text x="558" y="340" font-size="8" fill="#b8742a">D</text>
-  <text x="558" y="382" font-size="8" fill="#b8742a">S</text>
-  <!-- drain up to ring GND pad; source down to GND rail -->
-  <polyline points="608,260 590,260 590,310 562,310 562,330" fill="none" stroke="#3d3d3d" stroke-width="3"/>
-  <polyline points="562,386 562,430" fill="none" stroke="#3d3d3d" stroke-width="3"/>
-  <circle cx="562" cy="430" r="4" fill="#3d3d3d"/>
-  <text x="596" y="404" font-size="10" fill="#777777">ring GND return — switched:</text>
-  <text x="596" y="416" font-size="10" fill="#777777">dark ring = 0 mA</text>
-
-  <!-- ===== 1000uF cap across ring VCC / ring GND (at the ring) ===== -->
+  <!-- ===== 1000uF cap across ring VCC / GND at the ring ===== -->
   <line x1="597" y1="225" x2="597" y2="236" stroke="#3d3d3d" stroke-width="2.5"/>
   <line x1="586" y1="236" x2="608" y2="236" stroke="#3d3d3d" stroke-width="3"/>
   <line x1="586" y1="243" x2="608" y2="243" stroke="#3d3d3d" stroke-width="3"/>
@@ -91,8 +80,8 @@
   <circle cx="597" cy="225" r="3.5" fill="#d94141"/>
   <circle cx="597" cy="260" r="3.5" fill="#3d3d3d"/>
   <text x="577" y="232" font-size="11" font-weight="bold" fill="#333333">+</text>
-  <text x="575" y="236" text-anchor="end" font-size="10" fill="#777777">1000 µF</text>
-  <text x="575" y="248" text-anchor="end" font-size="10" fill="#777777">6.3 V</text>
+  <text x="575" y="240" text-anchor="end" font-size="10" fill="#777777">1000 µF</text>
+  <text x="575" y="252" text-anchor="end" font-size="10" fill="#777777">6.3 V</text>
 
   <!-- ===== WS2812B ring (center 740,225) ===== -->
   <circle cx="740" cy="225" r="105" fill="#173a2a" stroke="#0e2419" stroke-width="2"/>
@@ -134,12 +123,12 @@
   <text x="740" y="352" text-anchor="middle" font-size="10" fill="#777777">DOUT unused (no chaining)</text>
 
   <!-- ===== footnotes ===== -->
-  <text x="60" y="490" font-size="12" font-weight="bold" fill="#333333">Notes</text>
-  <text x="60" y="510" font-size="11" fill="#555555">• Zigbee 3.0 end device — pairs with ZHA. No WiFi, no OTA: reflash over USB-C. Hold BOOT 5–20 s to factory-reset the join.</text>
-  <text x="60" y="528" font-size="11" fill="#555555">• Ring VCC comes from BAT+ — the XIAO 5V pin is dead on battery. WS2812B runs fine at 3.7–4.2 V (3.3 V data margin improves).</text>
-  <text x="60" y="546" font-size="11" fill="#555555">• AO3400 switches the ring's GND return (gate GPIO2, 100 kΩ pulldown): a dark ring draws 0 mA instead of ~1 mA/LED idle.</text>
-  <text x="60" y="564" font-size="11" fill="#555555">• Battery life: radio-on baseline ~25 mA → roughly 10–14 days per charge at 8000 mAh (sleepy-poll firmware is the planned v2 fix).</text>
-  <text x="60" y="582" font-size="11" fill="#555555">• Onboard charger is ~100 mA — a full 8 Ah recharge takes 3+ days. Charge the cell externally or add a TP4056-class board.</text>
-  <text x="60" y="600" font-size="11" fill="#555555">• Use a protected cell (no low-voltage cutoff on the XIAO). Mind BAT pad polarity — no reverse protection.</text>
-  <text x="60" y="618" font-size="11" fill="#555555">• 330 Ω at the ring's DIN pad (lead &lt; 10 cm); 1000 µF across the ring's VCC/GND pads, + to VCC.</text>
+  <text x="60" y="480" font-size="12" font-weight="bold" fill="#333333">Notes</text>
+  <text x="60" y="500" font-size="11" fill="#555555">• Ring VCC rides the XIAO 5V pin (USB VBUS): fully works on USB; on battery the MCU + Zigbee stay online but the ring is dark.</text>
+  <text x="60" y="518" font-size="11" fill="#555555">• Whole-ring green at 30 % ≈ 100 mA — fine through the 5V pin. Avoid sustained full-white (~1.4 A is beyond it).</text>
+  <text x="60" y="536" font-size="11" fill="#555555">• LiPo: protected 1S on the BAT pads, mind polarity (no reverse protection). Onboard charger ~100 mA → full 8 Ah ≈ 3+ days.</text>
+  <text x="60" y="554" font-size="11" fill="#555555">• 330 Ω at the ring's DIN pad (lead &lt; 10 cm); 1000 µF across the ring's VCC/GND pads, + to VCC.</text>
+  <text x="60" y="572" font-size="11" fill="#555555">• Battery-native option (docs/wiring.md): ring VCC → BAT+, AO3400 + 100 k switching the ring GND return (gate D2) — 0 mA dark.</text>
+  <text x="60" y="590" font-size="11" fill="#555555">• Zigbee/ZHA end device — no WiFi/OTA; reflash over USB-C. Hold BOOT 5–20 s = factory-reset the join.</text>
+  <text x="60" y="608" font-size="11" fill="#555555">• Never attach a serial monitor while testing Zigbee — opening the USB-Serial/JTAG port hard-resets the chip.</text>
 </svg>
