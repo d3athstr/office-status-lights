@@ -17,6 +17,22 @@
 esphome:
   name: ${name}
   friendly_name: ${friendly_name}
+  # XIAO ESP32-C6 RF switch: GPIO3 low powers the antenna switch, GPIO14 low
+  # selects the built-in ceramic antenna (high = external u.FL). Neither pin
+  # is on the header. Without this the 802.15.4 radio hears nothing.
+  on_boot:
+    priority: 800
+    then:
+      - output.turn_off: rf_switch_enable
+      - output.turn_off: rf_antenna_select
+
+output:
+  - platform: gpio
+    id: rf_switch_enable
+    pin: GPIO3
+  - platform: gpio
+    id: rf_antenna_select
+    pin: GPIO14
 
 esp32:
   board: seeed_xiao_esp32c6
