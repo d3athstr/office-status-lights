@@ -7,11 +7,15 @@ Indicator" entities in Home Assistant).
 ## Behavior (rev 3)
 
 The whole ring is **one color-controllable light in HA** (ZHA,
-`COLOR_DIMMABLE_LIGHT` endpoint). HA automations drive it:
+`COLOR_DIMMABLE_LIGHT` endpoint, entity `light.don_office_busy_light`).
+HA automations drive it:
 
-- **Green** = everything OK, **red** = problem (watches
-  `input_boolean.internet_status`, same signal the old night lights used)
-- Lit **08:00–15:00 Mon–Fri** only; dark outside the window
+- **Green** = free, **red** = busy — state lives in
+  `input_boolean.office_status_light_alert` (ON = red 70%, OFF = green 30%)
+- A **Sonoff SNZB-01P button** ("Busy Light Button") on the desk toggles
+  the boolean — single press flips red ↔ green
+- Lit **08:00–15:00 Mon–Fri** only; dark outside the window (button
+  presses still flip the boolean off-hours; the color shows at 08:00)
 - Colors and schedule live in HA — firmware is just a Zigbee color light
 
 > Deliberate exception to the house ISA-101 dark-when-OK rule: owner spec
@@ -83,7 +87,7 @@ needs bench proof that parent-queued ZHA commands survive the poll window.
 
 ## Open items
 
-- [ ] HA schedule/status automations (in progress)
+- [x] HA schedule/status automations (schedule + busy-button toggle, 2026-07-21)
 - [ ] Unit 1: verify LiPo actually powers the board (dropped off Zigbee
       when USB was pulled, 2026-07-16 21:12)
 - [ ] Battery-native rewire for unit 1 (variant 2 above), when wanted
