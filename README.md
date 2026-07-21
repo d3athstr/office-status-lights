@@ -14,12 +14,15 @@ HA automations drive it:
   `input_boolean.office_status_light_alert` (ON = red 70%, OFF = green 30%)
 - A **Sonoff SNZB-01P button** ("Busy Light Button") on the desk toggles
   the boolean — single press flips red ↔ green
-- Lit **08:00–15:00 Mon–Fri** only; dark outside the window (button
-  presses still flip the boolean off-hours; the color shows at 08:00)
-- Colors and schedule live in HA — firmware is just a Zigbee color light
+- Lit **24/7 whenever powered** (schedule bound removed 2026-07-21). On
+  battery the ring is dark by hardware — ring VCC is USB-VBUS only on the
+  as-built unit — so this is effectively "on when plugged in" with zero
+  HA-side power detection needed
+- Colors live in HA — firmware is just a Zigbee color light
 
 > Deliberate exception to the house ISA-101 dark-when-OK rule: owner spec
-> 2026-07-16, bounded by the office-hours schedule. (Rev 2's four-quadrant
+> 2026-07-16; originally bounded by an office-hours schedule, now bounded
+> only by USB power (owner spec 2026-07-21). (Rev 2's four-quadrant
 > multi-state scheme is in git history if we ever want it back.)
 
 ## Design
