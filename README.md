@@ -39,15 +39,18 @@ HA automations drive it:
 
 ## Wiring variants
 
-Full details and diagram: [`docs/wiring.md`](docs/wiring.md)
+Full details, conversion punch list and diagram: [`docs/wiring.md`](docs/wiring.md)
 
-1. **As-built (unit 1):** ring VCC on the XIAO **5V pin**, LiPo on the BAT
-   pads. Fully functional on USB power; on battery the MCU + radio stay
-   online but the **ring is dark** (the 5V pin is USB-VBUS only). LiPo =
-   battery-backed controller, not a battery-powered light.
-2. **Battery-native (rev 2 rewire):** ring VCC moved to **BAT+**, AO3400 +
-   100 k in the ring's GND return. Ring works on battery (WS2812B is fine
-   at 3.7–4.2 V; data margin improves); dark hours cost 0 mA.
+1. **As-built (unit 1, rev 1):** ring VCC on the XIAO **5V pin**, LiPo on
+   the BAT pads. Fully functional on USB power; on battery the MCU + radio
+   stay online but the **ring is dark** (the 5V pin is USB-VBUS only).
+2. **Rev 4 target — diode-OR:** ring VCC fed through two Schottky diodes
+   (SS34/1N5822) from the 5V pin *and* BAT+ — USB carries the ring when
+   present (charger free to charge the cell), the LiPo carries it during
+   outages. AO3400 + 100 k in the ring's GND return so a dark ring costs
+   0 mA. (Rev 2's plain BAT+ feed is superseded: with the ring lit 24/7 it
+   out-draws the ~100 mA onboard charger and the cell would discharge even
+   on USB.)
 
 ![Wiring diagram](docs/wiring-diagram.svg)
 
@@ -82,19 +85,27 @@ USB-C only. Build env: RAZORCREST, `C:\Users\donja\esphome-status\`.
 
 ## Battery reality
 
-Always-on end device baseline ≈ 25 mA; with the office-hours schedule and
-the battery-native rewire expect **roughly 7–10 days per charge** at
-8000 mAh. Onboard charging is ~100 mA (3+ days for a full 8 Ah) — charge
-externally or add a TP4056. Future: sleepy-poll firmware (sub-mA baseline)
-needs bench proof that parent-queued ZHA commands survive the poll window.
+Always-on end device baseline ≈ 25 mA; ring green @ 30 % 24/7 adds
+~100–130 mA. On the rev 4 rewire that means **~2–2.5 days per charge** if
+the ring stays lit on battery, or **~10–13 days** with a dark-when-OK
+policy (needs the phase-2 USB-present detect). Onboard charging is ~100 mA
+(3+ days for a full 8 Ah after a deep drain) — fine as continuous top-off,
+slow after an outage; charge externally or add a TP4056 if in a hurry.
+Future: sleepy-poll firmware (sub-mA baseline) needs bench proof that
+parent-queued ZHA commands survive the poll window.
 
 ## Open items
 
 - [x] HA schedule/status automations (schedule + busy-button toggle, 2026-07-21)
-- [ ] Unit 1: verify LiPo actually powers the board (dropped off Zigbee
-      when USB was pulled, 2026-07-16 21:12)
-- [ ] Battery-native rewire for unit 1 (variant 2 above), when wanted
-- [ ] Second 8000 mAh LiPo + build for DeAnna's office
-- [ ] Battery % to HA — 200k/100k divider to A0 (commented block) or MAX17048
+- [ ] **Order Schottky diodes** (SS34 or 1N5822, ~20) — not in parts stock
+- [ ] Unit 1: meter the LiPo + BAT joints (board has died on every USB
+      loss: 2026-07-16 21:12 and overnight 2026-07-21 — battery path has
+      never actually carried it)
+- [ ] Unit 1: replace the USB cable (2026-07-21 outage was a full USB
+      de-enumeration; cable was flapping the week before)
+- [ ] Unit 1: rev 4 rewire (diode-OR + AO3400) per docs/wiring.md punch list
+- [ ] Phase 2: USB-present detect (D3) + battery % (A0 divider or MAX17048)
+      → dark-when-OK on battery
+- [ ] Second 8000 mAh LiPo + build for DeAnna's office (needs 2 more Schottkys)
 - [ ] Diffuser/stand design (3D print)
 - [ ] Retire or redeploy the old Zigbee night lights

@@ -14,11 +14,11 @@
 # USB-Serial/JTAG port hard-resets the chip (rst:0x15) and drops it off
 # the network.
 #
-# Power: 1S LiPo on the XIAO BAT pads keeps the MCU+radio alive; the ring
-# only lights while a 5 V/BAT+ source feeds its VCC (see docs/wiring.md
-# for the as-built USB variant vs the battery-native rewire). gate_pin
-# drives an optional AO3400 low-side FET on the ring's GND return so a
-# dark ring draws 0 mA — harmless if the FET isn't fitted.
+# Power: 1S LiPo on the XIAO BAT pads keeps the MCU+radio alive. Ring VCC
+# is a Schottky diode-OR of USB 5V and BAT+ (rev 4, docs/wiring.md) — USB
+# carries the ring when present, battery during outages. gate_pin drives
+# an AO3400 low-side FET on the ring's GND return so a dark ring draws
+# 0 mA — harmless no-op on the rev 1 as-built unit without the FET.
 
 esphome:
   name: ${name}
